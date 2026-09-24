@@ -1,0 +1,191 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Definitely Hub",
+   LoadingTitle = "Definitely Hub",
+   LoadingSubtitle = "Script Menu",
+   ConfigurationSaving = {
+      Enabled = false
+   },
+   Discord = {
+      Enabled = false
+   },
+   KeySystem = false
+})
+
+local MainTab = Window:CreateTab("ฟังก์ชันหลัก", 4483362458)
+
+local LocalPlayer = game.Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+-- 1. ระบบบิน (Fly)
+local Flying = false
+local FlySpeed = 50
+local BodyVelocity, BodyGyro
+
+MainTab:CreateToggle({
+   Name = "บิน (Fly)",
+   CurrentValue = false,
+   Flag = "FlyToggle",
+   Callback = function(Value)
+      Flying = Value
+      local Character = LocalPlayer.Character
+      if not Character then return end
+      local HRP = Character:FindFirstChild("HumanoidRootPart")
+      if not HRP then return end
+
+      if Flying then
+         BodyVelocity = Instance.new("BodyVelocity")
+         BodyVelocity.Velocity = Vector3.zero
+         BodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+         BodyVelocity.Parent = HRP
+
+         BodyGyro = Instance.new("BodyGyro")
+         BodyGyro.CFrame = HRP.CFrame
+         BodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+         BodyGyro.Parent = HRP
+
+         task.spawn(function()
+            while Flying and Character and HRP and HRP.Parent do
+               local Camera = workspace.CurrentCamera
+               local MoveDir = Vector3.zero
+
+               if UserInputService:IsKeyDown(Enum.KeyCode.W) then MoveDir = MoveDir + Camera.CFrame.LookVector end
+               if UserInputService:IsKeyDown(Enum.KeyCode.S) then MoveDir = MoveDir - Camera.CFrame.LookVector end
+               if UserInputService:IsKeyDown(Enum.KeyCode.A) then MoveDir = MoveDir - Camera.CFrame.RightVector end
+               if UserInputService:IsKeyDown(Enum.KeyCode.D) then MoveDir = MoveDir + Camera.CFrame.RightVector end
+               if UserInputService:IsKeyDown(Enum.KeyCode.Space) then MoveDir = MoveDir + Vector3.new(0, 1, 0) end
+               if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then MoveDir = MoveDir - Vector3.new(0, 1, 0) end
+
+               if MoveDir.Magnitude > 0 then
+                  MoveDir = MoveDir.Unit * FlySpeed
+               end
+
+               BodyVelocity.Velocity = MoveDir
+               BodyGyro.CFrame = Camera.CFrame
+               task.wait()
+            end
+            if BodyVelocity then BodyVelocity:Destroy() end
+            if BodyGyro then BodyGyro:Destroy() end
+         end)
+      else
+         if BodyVelocity then BodyVelocity:Destroy() end
+         if BodyGyro then BodyGyro:Destroy() end
+      end
+   end,
+})
+
+MainTab:CreateSlider({
+   Name = "ปรับความเร็วการบิน",
+   Range = {10, 300},
+   Increment = 5,
+   Suffix = " Speed",
+   CurrentValue = 50,
+   Flag = "FlySpeedSlider",
+   Callback = function(Value)
+      FlySpeed = Value
+   end,
+})
+
+-- 2. ระบบอมตะ (God Mode)
+local GodMode = false
+local GodConnection
+
+MainTab:CreateToggle({
+   Name = "อมตะ (God Mode)",
+   CurrentValue = false,
+   Flag = "GodModeToggle",
+   Callback = function(Value)
+      GodMode = Value
+      if GodMode then
+         GodConnection = RunService.Stepped:Connect(function()
+            if GodMode and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+               LocalPlayer.Character.Humanoid.Health = LocalPlayer.Character.Humanoid.MaxHealth
+            end
+         end)
+      else
+         if GodConnection then
+            GodConnection:Disconnect()
+         end
+      end
+   end,
+})
+
+-- 3. ระบบเพิ่มความเร็ว (WalkSpeed)
+local SpeedEnabled = false
+local WalkSpeedVal = 50
+
+MainTab:CreateToggle({
+   Name = "เปิดใช้งานความเร็วเดิน",
+   CurrentValue = false,
+   Flag = "SpeedToggle",
+   Callback = function(Value)
+      SpeedEnabled = Value
+      task.spawn(function()
+         while SpeedEnabled do
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+               LocalPlayer.Character.Humanoid.WalkSpeed = WalkSpeedVal
+            end
+            task.wait(0.1)
+         end
+         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = 16
+         end
+      end)
+   end,
+})
+
+MainTab:CreateSlider({
+   Name = "ปรับความเร็วเดิน",
+   Range = {16, 250},
+   Increment = 5,
+   Suffix = " Speed",
+   CurrentValue = 50,
+   Flag = "WalkSpeedSlider",
+   Callback = function(Value)
+      WalkSpeedVal = Value
+      if SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+         LocalPlayer.Character.Humanoid.WalkSpeed = WalkSpeedVal
+      end
+   end,
+})
+
+-- 4. ระบบกระโดดไม่จำกัด (Infinite Jump)
+local InfJumpEnabled = false
+
+UserInputService.JumpRequest:Connect(function()
+   if InfJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+      LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+   end
+end)
+
+MainTab:CreateToggle({
+   Name = "กระโดดไม่จำกัด (Infinite Jump)",
+   CurrentValue = false,
+   Flag = "InfJumpToggle",
+   Callback = function(Value)
+      InfJumpEnabled = Value
+   end,
+})
+
+-- 5. ระบบล่องหน (Invisibility)
+local Invisible = false
+
+MainTab:CreateToggle({
+   Name = "ล่องหน (Invisibility)",
+   CurrentValue = false,
+   Flag = "InvisToggle",
+   Callback = function(Value)
+      Invisible = Value
+      if LocalPlayer.Character then
+         for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") or part:IsA("Decal") then
+               if part.Name ~= "HumanoidRootPart" then
+                  part.Transparency = Invisible and 1 or 0
+               end
+            end
+         end
+      end
+   end,
+})
